@@ -48,22 +48,12 @@ def create_service_account_creds() -> Credentials:
             "token_uri": "https://oauth2.googleapis.com/token",
             "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
             "client_x509_cert_url": os.getenv("CLIENT_CERT_URL")}
-    # assert not any(
-    #     True for x in creds.values() if x is None
-    # ), "Google Creds environment variable missing!"
-    # for env_var in creds.items():
-    #     if env_var is None:
-    #         # print(f"Environment key/value pair is missing: {env_var}")
-    #         logging.debug(f"Environment key/value pair is missing: {env_var}")
 
-    [logging.debug(f"Environment key/value pair is missing: {key}") for key,secret in creds.items() if secret is None]
-
-    key_errors = False
-    [logging.debug(f"Environment key/value pair is missing: {key}") for key,secret in creds.items() if secret is None]
+    if missing_creds := [var for var, val in creds.items() if val is None]:
+        raise KeyError(f"Missing Environment variable(s): {','.join(missing_creds)}")
 
     auth = Credentials.from_service_account_info(creds)
     assert not auth.expired, "Google Auth expired" # error will raise exception, auth will return None
-
     return auth
 
 
@@ -455,9 +445,9 @@ def append_day_suffix(day) -> str:
 
 def run():
 
-    debugging = False
-
-    if debugging:
+    # APP_ENV is either prod or dev. If missing var, run as dev
+    debugging = os.getenv("APP_ENV", "dev")
+    if debugging != "prod":
         from pprint import pprint
         logging_level = logging.DEBUG
     else:
@@ -471,8 +461,7 @@ def run():
     # run on last date of the month up until max day in month. 
     # example: runs on 28th if tomorrow is the 1st. (Will consider leap years!)
     #          AND runs on 1st up until the 7th (SCRIPT_STOP_DAY)
-    if today.day >= SCRIPT_STOP_DAY and tomorrow.day != 1 and not debugging:
-        # print(f"It's past the {append_day_suffix(SCRIPT_STOP_DAY)} - Manual intervention required!")
+    if today.day >= SCRIPT_STOP_DAY and tomorrow.day != 1 and debugging != "prod":
         logging.info(f"It's past the {append_day_suffix(SCRIPT_STOP_DAY)} - Manual intervention required!")
         return
 
@@ -601,8 +590,8 @@ if __name__=='__main__':
     
     ## debugging
     ## TODO: use pytest to create unit tests
-    current_form_link = "https://forms.gle/79BW1bGsJDMJiuAQ6"
-    send_twilio_message([{"name": "Test Person", "number": MASTER_ALERT_NUM, "form_link": current_form_link}], None)
+    # current_form_link = "https://forms.gle/79BW1bGsJDMJiuAQ6"
+    # send_twilio_message([{"name": "Test Person", "number": MASTER_ALERT_NUM, "form_link": current_form_link}], None)
     ##
 
     print("Running upon deployment...")
@@ -616,4 +605,3 @@ if __name__=='__main__':
     print('Starting scheduler...')
     scheduler.start()
 
-    
