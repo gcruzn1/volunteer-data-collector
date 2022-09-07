@@ -28,7 +28,7 @@ MASTER_SHEET_URL = os.getenv("MASTER_SHEET_URL")
 MASTER_SHEET_ID = os.getenv("MASTER_SHEET_ID")
 RESPONSE_SHEET_GID = "0" # main sheet with all monthly progress data
 PROGRESS_SHEET_RANGE = "A:D" # These columns contain history of all links and forms per month
-PUBS_SHEET_GID = os.getenv("PUBS_SHEET_GID") # sheet GID for publisher map
+PUBS_SHEET_GID = os.getenv("PUBS_SHEET_GID") # sheet GID for volunteer map
 PUBS_SHEET_RANGE = "pubs!A:I"
 DBWH_SHEET = os.getenv("DBWH_SHEET")
 DBWH_SHEET_GID='0'
@@ -141,13 +141,13 @@ def clean_informes_data(df) -> None:
     # return df # required?
 
 
-def get_missing_reports(df, publishers) -> list:
-    """Returns a list of publishers that have not reported time!
+def get_missing_reports(df, volunteers) -> list:
+    """Returns a list of volunteers that have not reported time!
     NOTE: This is slightly slower than using built-in pandas functions
     """
     return [
         name
-        for name in publishers
+        for name in volunteers
         if not df['¿Cual es su nombre?'].isin([name]).any()
     ]
 
@@ -375,7 +375,7 @@ def update_datawarehouse(sheets_service, current_report_df, current_report_month
         raise Exception("Data warehouse update error")
 
 
-def generate_alert_list(current_form_url, missing_reports_df, publisher_map_df):
+def generate_alert_list(current_form_url, missing_reports_df, volunteer_map_df):
     '''Generate list of alerts by person based on contact rules. (ie. Escalation rules)'''
     
     format_number = lambda x: \
@@ -390,8 +390,8 @@ def generate_alert_list(current_form_url, missing_reports_df, publisher_map_df):
         contact_delegation = ''
 
         if row['Active?'] == 'n':
-            print(f'Skipping inactive publisher {row["full_name"]}')
-            continue # skip inactive publishers
+            print(f'Skipping inactive volunteer {row["full_name"]}')
+            continue # skip inactive volunteers
 
         elif permissions == 'y':
             twilio_message_list.append(
@@ -404,8 +404,8 @@ def generate_alert_list(current_form_url, missing_reports_df, publisher_map_df):
 
         elif permissions == 'n' and not pd.isnull(row['delegate_notification_to']):
             contact_delegation = \
-                publisher_map_df[
-                    publisher_map_df.row_id == row['delegate_notification_to']
+                volunteer_map_df[
+                    volunteer_map_df.row_id == row['delegate_notification_to']
                     ]['Cell'].item()
             if isinstance(contact_delegation,list):
                 contact_delegation = contact_delegation[0]
@@ -486,8 +486,8 @@ def run():
             return
 
 
-        # get publisher data 
-        publisher_map_df = get_worksheet_data(sheets_service, MASTER_SHEET_ID, PUBS_SHEET_RANGE)
+        # get volunteer data 
+        volunteer_map_df = get_worksheet_data(sheets_service, MASTER_SHEET_ID, PUBS_SHEET_RANGE)
 
         # get current month's data
         report_sheet_id,report_sheet_gid = parse_sheet_and_gid_from_url(progress_df['response_sheet_url'].item())
@@ -538,12 +538,12 @@ def run():
 
         # Find those who haven't submitted their report
         # Add full_name field
-        publisher_map_df['full_name'] = publisher_map_df.apply(lambda row: f"{row['First_Name']} {row['Last_Name']}",axis=1)
+        volunteer_map_df['full_name'] = volunteer_map_df.apply(lambda row: f"{row['First_Name']} {row['Last_Name']}",axis=1)
 
         # get df of missing reports, if any. 
-        missing_reports_df = publisher_map_df[~publisher_map_df['full_name'].isin(current_report_df['¿Cual es su nombre?'])]
+        missing_reports_df = volunteer_map_df[~volunteer_map_df['full_name'].isin(current_report_df['¿Cual es su nombre?'])]
 
-        # drop inactive publishers
+        # drop inactive volunteers
         missing_reports_df.drop(index=missing_reports_df.loc[ lambda df: df['Active?'] == 'n' ].index,inplace=True)
 
         if missing_reports_df.empty:
@@ -567,7 +567,7 @@ def run():
             # IF there are any missing reports, contact volunteer
 
             current_form_url = progress_df['form_url'].item()
-            twilio_message_list = generate_alert_list(current_form_url, missing_reports_df, publisher_map_df)
+            twilio_message_list = generate_alert_list(current_form_url, missing_reports_df, volunteer_map_df)
             errors_from_twilio, message_stats = send_twilio_message(twilio_message_list,None)
             if message_stats:
                 logging.info(f"Sent {len(message_stats)} messages")

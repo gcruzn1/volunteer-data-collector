@@ -20,7 +20,6 @@ MASTER_ALERT_NUM = os.getenv("MASTER_ALERT_NUM")
 def test_create_service_acct_creds():
     auth = create_service_account_creds()
     assert auth is not None
-    print("ok")
 
 
 def test_messaging():
