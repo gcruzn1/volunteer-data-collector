@@ -34,7 +34,8 @@ This way, it is easier for me AND the volunteers :)
 ### Future Project Objectives/Ideas:
 - [ ] Create a Web Front End for Admin and user creation
 - [ ] Fully automate form creation with new Google Forms API
-- [ ] Choose deployment method (AWS/DigitalOcean/Oracle...)
+- [ ] Choose cloud deployment method (AWS/DigitalOcean/Oracle...)
+- [ ] Decide on a domain and website name
 - [ ] Modify code to use message queuing system from app to Twilio
 - [ ] Refactor with the goal of being scalable (for kube/docker)
 
