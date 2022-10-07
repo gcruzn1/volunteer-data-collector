@@ -8,7 +8,7 @@ Automate collecting volunteer data on a monthly basis.
 I enjoy doing volunteer work, specifically focusing on encouraging and providing hope to those afflicted by life's challenges.
 At the end of every month I am responsible for collecting data from a few other volunteers, and as you can imagine; 
   chasing down each person to have them fill out a slip is a challenging task. 
-The idea of automation the collection of this data was born!
+The idea of automating the collection process was born!
 This way, it is easier for me AND the volunteers :)
 
 
