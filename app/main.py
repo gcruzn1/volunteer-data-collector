@@ -446,8 +446,7 @@ def append_day_suffix(day) -> str:
 def run():
 
     # APP_ENV is either prod or dev. If missing var, run as dev
-    debugging = os.getenv("APP_ENV", "dev")
-    if debugging != "prod":
+    if APP_LEVEL != "prod":
         from pprint import pprint
         logging_level = logging.DEBUG
     else:
@@ -461,7 +460,7 @@ def run():
     # run on last date of the month up until max day in month. 
     # example: runs on 28th if tomorrow is the 1st. (Will consider leap years!)
     #          AND runs on 1st up until the 7th (SCRIPT_STOP_DAY)
-    if today.day >= SCRIPT_STOP_DAY and tomorrow.day != 1 and debugging != "prod":
+    if today.day >= SCRIPT_STOP_DAY and tomorrow.day != 1 and APP_LEVEL != "dev":
         logging.info(f"It's past the {append_day_suffix(SCRIPT_STOP_DAY)} - Manual intervention required!")
         return
 
