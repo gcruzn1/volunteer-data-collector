@@ -35,6 +35,19 @@ DBWH_SHEET_GID='0'
 SCRIPT_STOP_DAY= int(os.getenv("SCRIPT_STOP_DAY",5))
 ADMIN_NAME = os.getenv("ADMIN_NAME", "George Cruz")
 APP_LEVEL = os.getenv("APP_LEVEL", "dev") # prod or dev (default if missing env var)
+DASHBOARD_SHEET = os.getenv("DASH_SHEET")
+DASH_DATA_SHEET = os.getenv("DASH_DATA")
+DASH_DATA_RANGE = "A2:B"
+
+
+""" TODO:
+    1. Add a cache for current reports
+    2. Use cache for last db update row, thus reducing data for each update
+    3. Add service to automate form creation
+    4. Add service to email report once all reports are collected
+    5. Front end for admin page, possibly a dashboard as well
+        a. Authentication + Authorization
+"""
 
 
 def create_service_account_creds() -> Credentials:
@@ -55,6 +68,33 @@ def create_service_account_creds() -> Credentials:
     auth = Credentials.from_service_account_info(creds)
     assert not auth.expired, "Google Auth expired" # error will raise exception, auth will return None
     return auth
+
+def create_dashboard(sheets_service, DASH_DATA_RANGE, current_report_df, volunteer_map_df) -> None:
+    """
+        1. Get list of active volunteers 
+        2. Get list of missing reports
+        3. Update dashboard data sheet
+
+        Full Name | Status (y/n) - remove | Collected (or Missing)
+    """
+    try:
+        df = volunteer_map_df.copy()
+        df["Status"] = df.apply(
+            lambda row: 
+                "collected" if row["full_name"] in current_report_df["¿Cual es su nombre?"].to_list()
+                else "missing"
+                , axis=1)
+        
+        # df["Status"] = df["Horas"].apply(lambda row: bool(row and int(row) > 0))
+        df = df[df["Active?"].str.lower() == "y"]
+        df.reset_index(drop=True, inplace=True)
+        sheet_id, gid = parse_sheet_and_gid_from_url(DASHBOARD_SHEET)
+
+        update_master_db(sheets_service, sheet_id, df[["full_name", "Status"]], f"Data!{DASH_DATA_RANGE}{len(df) + 1}")
+                         
+    except Exception as e:
+        logging.error(str(e))
+        send_twilio_message({}, traceback.format_exc(), error_message=True)
 
 
 def get_worksheet_data(sheets_service, sheet_id, range) -> pd.DataFrame:
@@ -544,6 +584,9 @@ def run():
 
         # drop inactive volunteers
         missing_reports_df.drop(index=missing_reports_df.loc[ lambda df: df['Active?'] == 'n' ].index,inplace=True)
+
+        ## TODO: rethink logic to drop inactive first, and once from both dfs
+        create_dashboard(sheets_service, DASH_DATA_RANGE, current_report_df, volunteer_map_df)
 
         if missing_reports_df.empty:
             # Collection has been Completed!
