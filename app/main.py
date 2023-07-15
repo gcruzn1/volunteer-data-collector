@@ -47,6 +47,7 @@ DASH_DATA_RANGE = "A2:B"
     4. Add service to email report once all reports are collected
     5. Front end for admin page, possibly a dashboard as well
         a. Authentication + Authorization
+    6. Ensure reports are always updated; users may submit report after deadline
 """
 
 
@@ -630,15 +631,8 @@ def run():
 
 if __name__=='__main__':
     
-    ## debugging
-    ## TODO: use pytest to create unit tests
-    # current_form_link = "https://forms.gle/79BW1bGsJDMJiuAQ6"
-    # send_twilio_message([{"name": "Test Person", "number": MASTER_ALERT_NUM, "form_link": current_form_link}], None)
-    ##
-
     print("Running upon deployment...")
     run()
-
 
     # Schedule this script to run at a specific cadence
     scheduler = BlockingScheduler()
